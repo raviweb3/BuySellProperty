@@ -122,13 +122,13 @@ contract PropertyMarket {
       uint256 totalPrice =  offer.price + offer.processingFee;
       require(totalPrice == msg.value, "Did not receive enough eth to start processing"); 
       
-      // marks the ownership of the property to smart contract
-      s_indexToProperties[offer.propertyId].owner = address(this);
+      // marks the ownership of the property to Authorizer
+      s_indexToProperties[offer.propertyId].owner = s_authorizer;
       s_indexToProperties[offer.propertyId].isAvailable = false;
       s_indexToProperties[offer.propertyId].inSaleProcess = true;
 
-      // Smart contract accepts the value transferred
-      (bool sent,) = payable(address(this)).call{value: msg.value}("");
+      // Funds transferred to Authorizer
+      (bool sent,) = payable(s_authorizer).call{value: msg.value}("");
       require(sent == true,"transaction failed");
     }
 
@@ -144,13 +144,12 @@ contract PropertyMarket {
 
         // Transfer of Ownership to Buyer     
         offer.status =  OfferStatus.Confirmed;
-        s_indexToProperties[offer.propertyId].owner = offer.buyer;
-        s_indexToProperties[offer.propertyId].inSaleProcess = false;
+        property.owner = offer.buyer;
+        property.inSaleProcess = false;
 
         // Transfer Funds to Seller
-        //payable(address(this)).transfer(msg.value);
-        (bool sent,) = payable(property.owner).call{value: offer.price}("");
-        require(sent == true,"transaction failed");
+        (bool sent2,) = payable(newSaleRecord.previousOwner).call{value: offer.price}("");
+        require(sent2 == true,"transaction failed");
     }
 
     function readSaleRecord(uint256 saleRecordIndex) public view returns(SaleRecord memory){
